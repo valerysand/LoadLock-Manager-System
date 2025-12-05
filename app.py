@@ -19,10 +19,18 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = '/Users/valerysandler/script/uploads'
+
+# Используем динамические пути для совместимости с облаком
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 
-Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
+# Создаем директории если их нет
+Path(UPLOAD_FOLDER).mkdir(exist_ok=True)
+Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
 # Статусы для LoadLock
 LOADLOCK_STATUSES = {
@@ -41,7 +49,7 @@ class LoadLockManager:
             raise ValueError("OPENAI_API_KEY not set")
         
         self.base_url = "https://api.openai.com/v1"
-        self.output_dir = Path("/Users/valerysandler/script/output")
+        self.output_dir = Path(OUTPUT_DIR)
         self.output_dir.mkdir(exist_ok=True)
         self.db_path = self.output_dir / "loadlock.db"
         self.init_database()

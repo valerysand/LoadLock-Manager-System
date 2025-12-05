@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoadLock Manager - מנהל LoadLock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            background: #f0f1ff;
+            border-color: #764ba2;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .loadlock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            grid-column: 1 / -1;
+        }
+
+        .loadlock-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-top: 4px solid #667eea;
+        }
+
+        .loadlock-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+
+        .loadlock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .loadlock-number {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .status-dropdown {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .status-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s ease;
+        }
+
+        .status-option:hover {
+            background: #f8f9ff;
+        }
+
+        .status-option:last-child {
+            border-bottom: none;
+        }
+
+        .loadlock-info {
+            font-size: 0.95em;
+            color: #666;
+            margin: 12px 0;
+        }
+
+        .loadlock-info strong {
+            color: #333;
+        }
+
+        .sample-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .sample-input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"], input[type="email"], textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95em;
+            flex: 1;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 0.85em;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-small:hover {
+            background: #764ba2;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            width: auto;
+            padding: 8px 12px;
+            font-size: 0.85em;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .history-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.9em;
+            border-right: 3px solid #667eea;
+        }
+
+        .history-time {
+            color: #999;
+            font-size: 0.85em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .modal-close {
+            float: left;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .loadlock-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔬 מנהל LoadLock</h1>
+            <p>System Management & Status Tracking - ניהול מערכת ועקיבה אחרי מצב</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>📸 הוסף LoadLock חדש</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div style="font-size: 3em; margin-bottom: 10px;">📷</div>
+                    <p>שחרור תמונה כאן או לחץ להעלאה</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>מעבדת את התמונה...</p>
+                </div>
+
+                <div id="resultBox" style="display: none; margin-top: 20px; padding: 15px; background: #f0f1ff; border-radius: 10px; border-left: 4px solid #667eea;">
+                    <h3 id="resultTitle" style="color: #667eea;"></h3>
+                    <p id="resultMessage"></p>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="card">
+                <h2>📊 סטטיסטיקה</h2>
+                <div style="font-size: 3em; color: #667eea; text-align: center; margin: 30px 0;">
+                    <span id="totalLoadlocks">0</span>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 1.1em; margin-bottom: 20px;">מוצרים רשומים</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <div style="text-align: center; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                        <div style="font-size: 1.8em; color: #198754;">✅</div>
+                        <p style="color: #666; font-size: 0.9em;">מוכן</p>
+                        <span id="countReady" style="font-size: 1.3em; font-weight: bold; color: #198754;">0</span>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                        <div style="font-size: 1.8em; color: #0d6efd;">⚙️</div>
+                        <p style="color: #666; font-size: 0.9em;">בעבודה</p>
+                        <span id="countWorking" style="font-size: 1.3em; font-weight: bold; color: #0d6efd;">0</span>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                        <div style="font-size: 1.8em; color: #fd7e14;">⚠️</div>
+                        <p style="color: #666; font-size: 0.9em;">חוסרים</p>
+                        <span id="countMissing" style="font-size: 1.3em; font-weight: bold; color: #fd7e14;">0</span>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                        <div style="font-size: 1.8em; color: #6f42c1;">🔍</div>
+                        <p style="color: #666; font-size: 0.9em;">QC</p>
+                        <span id="countQC" style="font-size: 1.3em; font-weight: bold; color: #6f42c1;">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LoadLock Cards Grid -->
+        <div class="loadlock-grid" id="loadlockGrid">
+            <div class="empty-state">
+                <p>אין מוצרים רשומים עדיין</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Modal -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div class="modal-header">שנה סטטוס</div>
+            <div id="statusList" style="margin: 20px 0;"></div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeHistoryModal()">&times;</span>
+            <div class="modal-header">היסטוריה</div>
+            <div id="historyList" style="margin: 20px 0; max-height: 400px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentLoadLockId = null;
+        let statusesConfig = {};
+
+        // Upload functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#e8ebff';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.background = '#f8f9ff';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#f8f9ff';
+            if (e.dataTransfer.files.length > 0) {
+                handleFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        async function handleFileUpload(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                const resultBox = document.getElementById('resultBox');
+                resultBox.style.display = 'block';
+
+                if (data.success) {
+                    document.getElementById('resultTitle').innerHTML = '✅ LoadLock נוסף בהצלחה!';
+                    document.getElementById('resultMessage').innerHTML = 
+                        `<strong>מספר הוראה:</strong> ${data.hora_number}<br>
+                         <strong>ביטחון:</strong> ${data.confidence}`;
+                } else {
+                    document.getElementById('resultTitle').innerHTML = '❌ שגיאה';
+                    document.getElementById('resultMessage').innerHTML = data.message || data.error;
+                }
+
+                refreshLoadlocks();
+            } catch (error) {
+                loading.style.display = 'none';
+                alert('Error uploading file');
+            }
+        }
+
+        async function refreshLoadlocks() {
+            try {
+                const response = await fetch('/api/loadlocks');
+                const loadlocks = await response.json();
+
+                document.getElementById('totalLoadlocks').textContent = loadlocks.length;
+
+                // Count by status
+                const counts = {
+                    ready: 0, working: 0, missing: 0, qc: 0, inserted: 0, packaging: 0
+                };
+                loadlocks.forEach(ll => {
+                    if (counts.hasOwnProperty(ll.status)) {
+                        counts[ll.status]++;
+                    }
+                });
+
+                document.getElementById('countReady').textContent = counts.ready;
+                document.getElementById('countWorking').textContent = counts.working;
+                document.getElementById('countMissing').textContent = counts.missing;
+                document.getElementById('countQC').textContent = counts.qc;
+
+                const grid = document.getElementById('loadlockGrid');
+
+                if (loadlocks.length === 0) {
+                    grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><p>אין מוצרים רשומים עדיין</p></div>';
+                    return;
+                }
+
+                grid.innerHTML = loadlocks.map(ll => `
+                    <div class="loadlock-card" style="border-top-color: ${ll.status_info.color || '#667eea'};">
+                        <div class="loadlock-header">
+                            <div class="loadlock-number">${ll.name}</div>
+                            <button class="status-badge" style="background: ${ll.status_info.color || '#667eea'};" 
+                                    onclick="showStatusModal(${ll.id})">
+                                ${ll.status_info.emoji || '⚙️'} ${ll.status_info.label || ll.status}
+                            </button>
+                        </div>
+
+                        <div class="loadlock-info">
+                            <strong>מספר הוראה:</strong> ${ll.hora_number}
+                        </div>
+
+                        ${ll.current_sample ? `<div class="loadlock-info" style="background: #f0f1ff; padding: 8px; border-radius: 6px; color: #667eea;">
+                            <strong>📦 מוצר נוכחי:</strong> ${ll.current_sample}
+                        </div>` : ''}
+
+                        <div class="loadlock-info">
+                            <strong>התווסף:</strong> ${new Date(ll.date_added).toLocaleDateString('he-IL')}
+                        </div>
+
+                        <div class="loadlock-info">
+                            <strong>עדכון אחרון:</strong> ${ll.last_updated ? new Date(ll.last_updated).toLocaleTimeString('he-IL') : 'לא עדכן'}
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn-small" onclick="showHistory(${ll.id})" style="flex: 1;">📋 היסטוריה</button>
+                            <button class="btn-small btn-delete" onclick="deleteLoadlock(${ll.id})">🗑️ מחק</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function showStatusModal(loadLockId) {
+            currentLoadLockId = loadLockId;
+            const modal = document.getElementById('statusModal');
+            const statusList = document.getElementById('statusList');
+
+            const statuses = Object.entries(statusesConfig).map(([key, value]) => `
+                <div onclick="updateStatus('${key}')" style="
+                    padding: 12px;
+                    margin: 8px 0;
+                    background: ${value.color};
+                    color: white;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    text-align: center;
+                    font-weight: 600;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    ${value.emoji} ${value.label}
+                </div>
+            `).join('');
+
+            statusList.innerHTML = statuses;
+            modal.style.display = 'block';
+        }
+
+        async function updateStatus(newStatus) {
+            const notes = prompt('הוסף הערה (אופציונלי):');
+            
+            try {
+                const response = await fetch(`/api/loadlock/${currentLoadLockId}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus, notes: notes || '' })
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    refreshLoadlocks();
+                }
+            } catch (error) {
+                alert('שגיאה בעדכון הסטטוס');
+            }
+        }
+
+        async function showHistory(loadLockId) {
+            try {
+                const response = await fetch(`/api/loadlock/${loadLockId}/history`);
+                const history = await response.json();
+
+                const historyList = document.getElementById('historyList');
+                if (history.length === 0) {
+                    historyList.innerHTML = '<p>אין היסטוריה</p>';
+                } else {
+                    historyList.innerHTML = history.map(h => `
+                        <div class="history-item">
+                            ${h.old_status_info.emoji || '⚙️'} ${h.old_status_info.label || h.old_status}
+                            →
+                            ${h.new_status_info.emoji || '⚙️'} ${h.new_status_info.label || h.new_status}
+                            <div class="history-time">${new Date(h.timestamp).toLocaleString('he-IL')}</div>
+                            ${h.notes ? `<div style="margin-top: 5px; color: #666;">${h.notes}</div>` : ''}
+                        </div>
+                    `).join('');
+                }
+
+                document.getElementById('historyModal').style.display = 'block';
+            } catch (error) {
+                alert('שגיאה בטעינת היסטוריה');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('statusModal').style.display = 'none';
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        async function deleteLoadlock(id) {
+            if (confirm('האם אתה בטוח?')) {
+                try {
+                    await fetch(`/api/loadlock/${id}`, { method: 'DELETE' });
+                    refreshLoadlocks();
+                } catch (error) {
+                    alert('שגיאה בעת מחיקה');
+                }
+            }
+        }
+
+        // Initialize
+        function init() {
+            statusesConfig = window.STATUSES || {};
+            refreshLoadlocks();
+            setInterval(refreshLoadlocks, 10000);
+        }
+
+        window.addEventListener('load', init);
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const statusModal = document.getElementById('statusModal');
+            const historyModal = document.getElementById('historyModal');
+            if (event.target == statusModal) statusModal.style.display = 'none';
+            if (event.target == historyModal) historyModal.style.display = 'none';
+        }
+    </script>
+
+    <script>
+        // Pass statuses to JavaScript
+        window.STATUSES = {
+            'inserted': {'label': 'הוכנס', 'color': '#0dcaf0', 'emoji': '📥'},
+            'working': {'label': 'בעבודה', 'color': '#0d6efd', 'emoji': '⚙️'},
+            'missing': {'label': 'חוסרים', 'color': '#fd7e14', 'emoji': '⚠️'},
+            'qc': {'label': 'QC', 'color': '#6f42c1', 'emoji': '�'},
+            'packaging': {'label': 'באריזה', 'color': '#0dcaf0', 'emoji': '📦'},
+            'ready': {'label': 'מוכן', 'color': '#198754', 'emoji': '✅'}
+        };
+    </script>
+</body>
+</html>
